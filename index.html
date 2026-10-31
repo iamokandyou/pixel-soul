@@ -2446,6 +2446,13 @@ var STRINGS = {
                              en: 'Shield · heavily armored, focus your fire' },
   'level.01.intro.elite':  { zh: '精英 · 激光弹，伤害 2，优先处理',
                              en: 'Elite · laser bolts, 2 damage — take it out first' },
+  'level.02.name':    { zh: '第二关 · 铁脊', en: 'Level 2 · Ironridge' },
+  /* 第二关不再教「这是什么敌人」（L01 教完了），教的是「组合怎么破」：
+   * 提示只出现在两种新压力**首次登场**的那一波。同样一句话说清威胁与对策。 */
+  'level.02.intro.wall': { zh: '盾兵压阵，无人机从头顶来 —— 两头都要顾',
+                           en: 'Shields up front, drones overhead — watch both' },
+  'level.02.intro.duo':  { zh: '双精英！激光会交叉，别站中间',
+                           en: 'Twin Elites! Lasers cross — stay off the middle' },
 
   /* ── 技能 ── */
   'skill.name':       { zh: '净化屏障',        en: 'Purge Barrier' },
@@ -2457,10 +2464,15 @@ var STRINGS = {
    * 但进来了，因为「以后想改成中文的『得分』」应该改一处而不是翻遍代码。 */
   'hud.score':        { zh: 'SCORE {n}', en: 'SCORE {n}' },
   'hud.kills':        { zh: '击杀 {n}',  en: 'KILLS {n}' },
+  /* 关卡号进 HUD 的理由与击杀数相同：连续战役里玩家需要随时知道「打到哪了」，
+   * 尤其是切关横幅只显示 3 秒、滚过去就没了。 */
+  'hud.stage':        { zh: '第{n}关',  en: 'STAGE {n}' },
 
   /* ── 结算 ── */
   'end.dead':         { zh: '本次结束',            en: 'RUN OVER' },
-  'end.clear':        { zh: '关卡完成',            en: 'LEVEL CLEAR' },
+  /* 「关卡完成」改成了「全部通关」：战役里切关不再结算，这行字现在
+   * 只会在**打完整条战役**（或中途阵亡时的另一行）出现 —— 旧文案会撒谎。 */
+  'end.clear':        { zh: '全部通关',            en: 'ALL CLEAR' },
   'end.summary':      { zh: '得分 {score} · 击杀 {kills}', en: 'Score {score} · Kills {kills}' },
   /* 破纪录那句必须比普通那句**更响**：中文靠「新纪录！」三个字 + 感叹号，
    * 英文用全大写 NEW RECORD! —— 小写 'New record!' 在 14px 下和其它行没区别。 */
@@ -2665,6 +2677,118 @@ module.exports = {
     { t: 72, type: 'runner', count: 4 }
   ]
 };
+
+});
+
+__define("src/data/level-02.js", function (require, module, exports) {
+'use strict';
+/* ============================================================================
+ * 关卡数据 · L02（铁脊）
+ * ----------------------------------------------------------------------------
+ * 第一关教的是「每种敌人是什么」（物种教学），第二关教的是「组合怎么破」
+ * （压力教学）。所以这里的 introKey 只出现在**两种新压力**首次登场的那一波：
+ *   wall —— 盾兵在地面顶住火力线、无人机从头顶压下来：玩家第一次要同时
+ *           顾上下两条轴。这是六种敌人各自都学过、但**从未同时出现**的组合。
+ *   duo  —— 双精英同场：两条激光弹道会交叉，站中间就是同时吃两发。
+ *
+ * 结构硬约束（tests/run.js 对每一关逐条校验，改了就会红）：
+ *   · scrollSpeed 必须等于 tables.ENEMIES.turret.speed —— 炮台的
+ *     「相对地面静止」是由这两个数相等**定义**的，不是巧合；
+ *   · 第一波 t > 1.0（关卡头 1 秒停火宽限期之后）；
+ *   · 单波 count ≤ 4；波次按时间升序；最后一波 t < duration。
+ *
+ * 节奏（100 秒，比 L01 的 75 秒长，密度高约 10%）：
+ *    0–17s  复习：L01 的基础敌人按旧顺序走一遍 —— 给玩家一个「我变强了」
+ *           的确认段，也是从上一关残余压力里缓一口气的过场；
+ *   22–48s  组合教学：两种新压力各教一次，中间穿插已会的敌人保持温度；
+ *   52–72s  混编考核：精英开始出现在组合里，而不是单独登场；
+ *   76–97s  决战：双精英 + 高密度收尾，把整局顶到最高点再放结算。
+ * ==========================================================================*/
+
+module.exports = {
+  id: 'L02',
+  nameKey: 'level.02.name',
+  duration: 100,
+  scrollSpeed: 60,       // 必须等于 turret.speed，见文件头
+  weapon: 'rifle',
+  groundY: 0.66,         // 地平线比第一关（0.72）高 —— 不换美术也能看出「换了地方」
+
+  waves: [
+    // ── 复习段 ──
+    { t: 2,  type: 'grunt',  count: 3 },
+    { t: 7,  type: 'runner', count: 3 },
+    { t: 12, type: 'drone',  count: 2 },
+    { t: 17, type: 'turret', count: 2 },
+
+    // ── 组合教学段 ──
+    { t: 22, type: 'shield', count: 2, introKey: 'level.02.intro.wall' },
+    { t: 26, type: 'drone',  count: 3 },
+    { t: 31, type: 'grunt',  count: 4 },
+    { t: 36, type: 'turret', count: 2 },
+    { t: 40, type: 'runner', count: 4 },
+    { t: 44, type: 'shield', count: 2 },
+    { t: 48, type: 'drone',  count: 3 },
+
+    // ── 混编考核段：精英进组合 ──
+    { t: 52, type: 'elite',  count: 1 },
+    { t: 55, type: 'grunt',  count: 3 },
+    { t: 59, type: 'turret', count: 3 },
+    { t: 63, type: 'runner', count: 4 },
+    { t: 67, type: 'shield', count: 2 },
+    { t: 69, type: 'drone',  count: 2 },
+    { t: 72, type: 'grunt',  count: 4 },
+
+    // ── 决战段 ──
+    { t: 76, type: 'elite',  count: 2, introKey: 'level.02.intro.duo' },
+    { t: 81, type: 'runner', count: 4 },
+    { t: 85, type: 'drone',  count: 4 },
+    { t: 89, type: 'turret', count: 2 },
+    { t: 92, type: 'shield', count: 2 },
+    { t: 95, type: 'elite',  count: 1 },
+    { t: 97, type: 'grunt',  count: 3 }
+  ]
+};
+
+});
+
+__define("src/data/levels.js", function (require, module, exports) {
+'use strict';
+/* ============================================================================
+ * 关卡表 —— 战役的唯一真相源
+ * ----------------------------------------------------------------------------
+ * 为什么要有这一层：play.js 原来 require 的是 level-01 **本身**，玩法层只
+ * 认识一个关卡对象。那样「加第二关」就变成「把单场战斗写死在玩法层里」——
+ * 时间到只能结算，战役无处安放。
+ *
+ * 现在关卡是**一个有序数组**：
+ *   · play.js 按 index 推进（AT[i] → AT[i+1]），最后一关时间到才结算；
+ *   · 顺序即难度曲线，重排这个数组就是重排整个战役；
+ *   · 波次结构的所有红线（tests/run.js）对数组里的**每一关**逐条校验，
+ *     新关卡只要进这个数组就自动受全部断言保护 —— 守性质，不守某一关的数字。
+ *
+ * 每关必须自带的字段：id / nameKey / duration / scrollSpeed / weapon /
+ * groundY / waves。缺任何一个都会在测试里现形（或直接玩不出来）。
+ * ==========================================================================*/
+
+var AT = [
+  require('./level-01'),
+  require('./level-02')
+];
+
+function indexOf(id) {
+  for (var i = 0; i < AT.length; i++) if (AT[i].id === id) return i;
+  return -1;
+}
+
+function byId(id) { return AT[indexOf(id)] || null; }
+
+/* 下一关。没有下一关（最后一关）返回 null —— 调用方以此区分「切关」和「结算」。 */
+function next(id) {
+  var i = indexOf(id);
+  return (i >= 0 && i + 1 < AT.length) ? AT[i + 1] : null;
+}
+
+module.exports = { AT: AT, indexOf: indexOf, byId: byId, next: next };
 
 });
 
@@ -3586,7 +3710,7 @@ function backdrop(g, view, ctx) {
 /* 蜡笔风的 UI 配色：纸底是浅色，所以 HUD 必须用深色文字。
  * 这不是装饰 —— 白字压在米白纸上等于没有 HUD。 */
 var UI = {
-  ink: '#3B2F2A', dim: '#8A7A6A', accent: '#D4462A',
+  ink: '#3B2F2A', dim: '#8A7A6A', accent: '#D4462A', onAccent: '#FFF6EA',
   panel: 'rgba(247,241,225,0.82)', danger: '#C0392B', good: '#3E8E4E'
 };
 
@@ -4058,7 +4182,7 @@ module.exports = registry.register({
   shadow: shadow,
   barrier: barrier,
   ui: {
-    ink: '#F7F5F0', dim: '#8B95A6', accent: '#2ED8A7',
+    ink: '#F7F5F0', dim: '#8B95A6', accent: '#2ED8A7', onAccent: '#0B2A22',
     panel: 'rgba(18,17,26,0.72)', danger: '#FF5A3C', good: '#2ED8A7'
   },
   // 测试用：暴露离散化结果，便于断言「像素风真的没有圆弧」
@@ -4222,7 +4346,7 @@ __define("src/render/registry.js", function (require, module, exports) {
  *
  * 可选能力（有就用，没有就回退 —— 不允许「有但写错」）：
  *   backdrop(g, view, ctx)   画整个世界背景（天空 / 远景 / 地面）
- *   ui                       该画风下的 UI 配色 {ink, dim, accent, panel, danger, good}
+ *   ui                       该画风下的 UI 配色 {ink, dim, accent, onAccent, panel, danger, good}
  *   splash(g, view, ctx)     画启动页的「世界」部分（文案排版交给 splashContent）
  *   spark(g, x, y, color, a) 画一颗命中火花
  *   shadow(g, x, groundY, k) 画一枚**地面阴影**（角色腾空时）
@@ -4253,9 +4377,12 @@ var REQUIRED = ['id', 'labelKey', 'minTier', 'drawHero', 'drawEnemy', 'drawBulle
 var OPTIONAL_FN = ['backdrop', 'splash', 'spark', 'shadow', 'barrier'];
 
 /* 各画风的默认 UI 配色（深底白字）。画风自带 ui 时覆盖。
- * play.js 的 HUD 只读这里 —— 蜡笔风是浅底，白字会看不见，这是必须解决的问题。 */
+ * play.js 的 HUD 只读这里 —— 蜡笔风是浅底，白字会看不见，这是必须解决的问题。
+ * onAccent：画在 accent 色块**上面**的文字色。ink/dim 都是给 panel 底设计的，
+ * 直接叠在 accent 上对比度不够（英文模式下角色按钮的弹型小字几乎不可读，
+ * 2026-11 走查发现）。三套画风各自给出与自家 accent 配对的高对比色。 */
 var DEFAULT_UI = {
-  ink: '#F7F5F0', dim: '#8B95A6', accent: '#2ED8A7',
+  ink: '#F7F5F0', dim: '#8B95A6', accent: '#2ED8A7', onAccent: '#0B2A22',
   panel: 'rgba(18,17,26,0.72)', danger: '#FF5A3C', good: '#2ED8A7'
 };
 
@@ -4799,7 +4926,7 @@ module.exports = registry.register({
   shadow: shadow,
   barrier: barrier,
   ui: {
-    ink: '#F7F5F0', dim: '#8FA6C4', accent: '#7FD0FF',
+    ink: '#F7F5F0', dim: '#8FA6C4', accent: '#7FD0FF', onAccent: '#0A1B2A',
     panel: 'rgba(10,18,30,0.78)', danger: '#FF6B4A', good: '#7FD0FF'
   }
 });
@@ -5000,7 +5127,9 @@ module.exports = {
     g.fillText(i18n.t('app.title'), cx, titleY);
     g.fillStyle = ui.dim;
     g.font = '11px sans-serif';
-    g.fillText(meta.label, cx, titleY + 20);
+    /* 副标题用玩家向的 tagline，不用 meta.label —— 「骨架 v0.2」是开发者
+     * 状态词，印在玩家菜单上等于把厨房搬进餐厅（Poki 审核也会看到）。 */
+    g.fillText(meta.tagline, cx, titleY + 20);
 
     /* 最高分只在**真的有过记录**时出现（best > 0）。
      * 第一次进游戏的玩家看到「最高分 0」只会困惑 —— 那不是信息，是噪音。
@@ -5067,7 +5196,7 @@ module.exports = {
       gg.lineWidth = 1.5;
       gg.strokeStyle = active && allowed ? u.accent : u.dim;
       gg.strokeRect(bx, by, bw2, bh);
-      gg.fillStyle = allowed ? u.ink : u.dim;
+      gg.fillStyle = allowed ? (active ? u.onAccent : u.ink) : u.dim;
       gg.font = (active ? 'bold ' : '') + (bh >= 40 ? 13 : 12) + 'px sans-serif';
       gg.fillText(STYLE_LABELS[id] + (allowed ? '' : i18n.t('menu.highOnly')),
         bx + bw2 / 2, by + bh * 0.63);
@@ -5090,7 +5219,9 @@ module.exports = {
       gg.fillStyle = u.ink;
       gg.font = (on ? 'bold ' : '') + (bh >= 50 ? 13 : 13) + 'px sans-serif';
       gg.fillText(i18n.t(f.labelKey), bx + bw2 / 2, by + bh * 0.40);
-      gg.fillStyle = u.dim;
+      /* 选中态的弹型小字画在 accent 色块上 —— 必须用 onAccent，
+       * ink/dim 都是给 panel 底调的，叠在红底上几乎不可读（英文小字最先暴露）。 */
+      gg.fillStyle = on ? u.onAccent : u.dim;
       gg.font = '10px sans-serif';
       gg.fillText(bulletName(f.bullet), bx + bw2 / 2, by + bh * 0.76);
       return { id: f.id, x: bx, y: by, w: bw2, h: bh };
@@ -5194,7 +5325,7 @@ __define("src/scenes/play.js", function (require, module, exports) {
 var registry = require('../render/registry');
 var figure = require('../data/figure');
 var tables = require('../data/tables');
-var level = require('../data/level-01');
+var levels = require('../data/levels');
 var bulletShapes = require('../data/bullet-shapes');
 var enemyData = require('../data/enemies');
 var P = require('../data/prims');
@@ -5274,6 +5405,13 @@ module.exports = {
     this.best = env.storageGet('ps.best', 0) || 0;
     this.newBest = false;
 
+    /* 关卡：菜单将来可以带 levelId（选关），缺省从第一关开始。
+     * 原来这里 require 的是 level-01 模块本身 —— 玩法层只认识一个关卡对象，
+     * 「战役」就被写死成了「单场」。现在关卡是 levels.AT 里的一个下标，
+     * 时间到的推进逻辑见 update() 末尾。 */
+    this.levelIdx = Math.max(0, levels.indexOf(p.levelId));
+    this.level = levels.AT[this.levelIdx];
+
     /* 进入关卡 = 玩家开始玩了。门户靠这一对事件算时长和留存，少了它后台
      * 只看得见「有人加载了游戏」，看不见「有没有人玩」。
      * 重复调用由 portal 的顺序守卫吞掉 —— 结算页重开、切后台回来都会走到
@@ -5281,7 +5419,7 @@ module.exports = {
     portal.gameplayStart();
 
     this.player = {
-      x: 60, y: layout.view().h * (level.groundY || 0.62),
+      x: 60, y: layout.view().h * (this.level.groundY || 0.62),
       vx: 0, vy: 0,
       onGround: true,
       hp: 3, maxHp: 3,
@@ -5314,7 +5452,7 @@ module.exports = {
     this.barriers = [];
     this.spawnIdx = 0;
     this.scrollX = 0;
-    this.weapon = tables.WEAPONS[level.weapon];
+    this.weapon = tables.WEAPONS[this.level.weapon];
     this.levelTime = 0;
   },
 
@@ -5420,7 +5558,7 @@ module.exports = {
     if (this.gameOver) return;
     this.t += dt;
     this.levelTime += dt;
-    this.scrollX += level.scrollSpeed * dt;
+    this.scrollX += this.level.scrollSpeed * dt;
     if (this.toast) {
       this.toast.t -= dt;
       if (this.toast.t <= 0) this.toast = null;
@@ -5429,7 +5567,7 @@ module.exports = {
     var p = this.player, H = figure.HERO;
     // 逻辑视口随横竖屏变化 —— 每帧取一次，转到头的瞬间就生效，不需要重建场景
     var view = layout.view();
-    var groundY = view.h * (level.groundY || 0.62);
+    var groundY = view.h * (this.level.groundY || 0.62);
 
     /* ── 移动 / 跳跃 / 翻滚 ─────────────────────────────────────────────────
      * 两条轴，各司其职：
@@ -5591,8 +5729,8 @@ module.exports = {
     }
 
     /* ── 刷怪：按关卡时间表，与画风无关 ── */
-    while (this.spawnIdx < level.waves.length && level.waves[this.spawnIdx].t <= this.levelTime) {
-      var w = level.waves[this.spawnIdx++];
+    while (this.spawnIdx < this.level.waves.length && this.level.waves[this.spawnIdx].t <= this.levelTime) {
+      var w = this.level.waves[this.spawnIdx++];
       var et = tables.ENEMIES[w.type];
       if (!et) continue;
       // en.y 是碰撞盒**底边**（= 落脚点），所以地面敌人直接放 groundY；
@@ -5766,7 +5904,19 @@ module.exports = {
     }
 
     if (p.invuln > 0) p.invuln -= dt;
-    if (this.levelTime >= level.duration) this.endRun();   // 骨架版：跑完即通关
+    /* ── 关卡推进：时间到 = 这一关考完，不是这一局结束 ──────────────────────
+     * 还有下一关就无缝滚进去（分数、击杀、技能进度、血量全保留）；
+     * 最后一关的时间到才是 endRun。
+     *
+     * 为什么必须这样改：Poki 的 Player Fit Test 要求**平均游玩 3 分钟以上**，
+     * 旧结构「单关即单局」（75 秒就结算）在几何上就够不到那条线 ——
+     * 就算玩家喜欢，也没有时间给他喜欢。连续战役把一局拉到 75 + 100 = 175 秒，
+     * 平均游玩时长才有了上限可言。 */
+    if (this.levelTime >= this.level.duration) {
+      var nxt = levels.next(this.level.id);
+      if (nxt) this.advanceLevel(nxt);
+      else this.endRun();
+    }
   },
 
   /* 击杀。color 可选 —— 屏障杀怪该是蓝色火花，玩家枪杀怪是红色。
@@ -5778,6 +5928,24 @@ module.exports = {
     this.addSparks(en.x, en.y - en.def.h * 0.5, color || '#FF5A3C', en.type === 'elite' ? 12 : 6);
     this.enemies.splice(idx, 1);
     audio.play('kill');
+  },
+
+  /* ── 进入下一关（战役不清局）──────────────────────────────────────────────
+   * 保留：分数、击杀、技能进度、血量、屏障、场上残余的敌人与在途子弹 ——
+   * 战役是一场连续的战斗，切关只换「考题」，不换「战场」。
+   * 重置：关卡时间、刷怪游标、出场武器（下一关可以带不同的枪）。
+   *
+   * 过场无敌 1.2s 的来历：上一关末尾在途的敌方子弹，叠上「关卡头 1 秒停火」
+   * 之后的首批新敌人，正好都压在玩家看「下一关」横幅的那几秒 ——
+   * 这个时刻挨一枪是最冤的，而冤枉的掉血就是劝退。 */
+  advanceLevel: function (nxt) {
+    this.levelIdx = levels.AT.indexOf(nxt);
+    this.level = nxt;
+    this.levelTime = 0;
+    this.spawnIdx = 0;
+    this.weapon = tables.WEAPONS[nxt.weapon];
+    this.player.invuln = Math.max(this.player.invuln, 1.2);
+    this.toast = { text: i18n.t(nxt.nameKey), t: 3.0 };
   },
 
   /* ── 一局结束 ────────────────────────────────────────────────────────────
@@ -5825,12 +5993,12 @@ module.exports = {
   render: function (g, view) {
     var impl = registry.get(this.style);
     var ui = registry.uiOf(this.style);
-    var groundY = view.h * (level.groundY || 0.62);
+    var groundY = view.h * (this.level.groundY || 0.62);
 
     /* 背景交给渲染器 —— 蜡笔风是米白纸底，白字 HUD 会看不见，
      * 所以「背景 + UI 配色」必须由画风一起提供，而不是玩法层硬编码。 */
     registry.paintBackdrop(g, this.style, view, {
-      scrollX: this.scrollX, t: this.t, groundY: groundY, level: level
+      scrollX: this.scrollX, t: this.t, groundY: groundY, level: this.level
     });
 
     var p = this.player;
@@ -5968,11 +6136,12 @@ module.exports = {
     g.fillText(i18n.t('hud.kills', { n: this.kills }), view.w - 14, 26);
     g.fillStyle = ui.dim;
     g.font = '11px sans-serif';
-    /* 右上角第二行：画风 · 角色 · 倒计时。三个都是展示名，全部过 i18n ——
+    /* 右上角第二行：关卡号 · 画风 · 角色 · 倒计时。四个都是展示名，全过 i18n ——
      * 这一行曾经在中文界面上印出 'cartoon · 猫'（画风是 id、角色是中文），
      * 半英半中比全英文更难看。 */
-    g.fillText(i18n.t(impl.labelKey) + ' · ' + i18n.t(this.fighter.labelKey) + ' · '
-      + (level.duration - Math.floor(this.levelTime)) + 's', view.w - 14, 44);
+    g.fillText(i18n.t('hud.stage', { n: this.levelIdx + 1 }) + ' · ' + i18n.t(impl.labelKey) + ' · '
+      + i18n.t(this.fighter.labelKey) + ' · '
+      + (this.level.duration - Math.floor(this.levelTime)) + 's', view.w - 14, 44);
 
     /* 技能条：充能进度 + 等级 + 就绪态。
      * 三样都要，因为它们回答三个不同的问题：
